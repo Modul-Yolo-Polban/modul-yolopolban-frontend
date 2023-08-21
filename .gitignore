@@ -1,5 +1,11 @@
+# Ignore everything:
+data/images/*
+data/videos/*
+result/images/*
+result/videos/*
 
-data/images/
-data/videos/
-result/images/
-result/videos/
+# Do not ignore these files:
+!data/images/tmp.dat
+!data/videos/tmp.dat
+!result/images/tmp.dat
+!result/videos/tmp.dat

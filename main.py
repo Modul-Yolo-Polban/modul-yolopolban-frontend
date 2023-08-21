@@ -73,9 +73,6 @@ if choose == "Image":
     input_data = st.file_uploader("Input Image", type=['png', 'jpeg', 'jpg'])
     if input_data is not None:
         with st.spinner(text='Loading...'):
-            #check if dir available (image)
-            check_dir_create('/data/images/')
-            check_dir_create('/result/images/')
             #generate unique id
             u_id = str(uuid.uuid1())
             st.image(input_data)
@@ -110,9 +107,6 @@ elif choose == "Video":
     input_data = st.file_uploader("Input Video", type=['mp4', 'mkv'])
     if input_data is not None:
         with st.spinner(text='Loading...'):
-            #check if dir available (image)
-            check_dir_create('/data/videos/')
-            check_dir_create('/result/videos/')
             #generate unique id
             u_id = str(uuid.uuid1())
             st.video(input_data)
