@@ -35,6 +35,12 @@ def convert_avi_to_mp4(avi_file_path, output_name):
     clip = moviepy.VideoFileClip(avi_file_path)
     clip.write_videofile(output_name)
 
+## Function check path if not there create.
+def check_dir_create(path):
+    isExisting = os.path.exists(path)
+    if isExisting != True:
+        os.mkdir(path)
+
 # Hearder 
 st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
 
@@ -67,6 +73,9 @@ if choose == "Image":
     input_data = st.file_uploader("Input Image", type=['png', 'jpeg', 'jpg'])
     if input_data is not None:
         with st.spinner(text='Loading...'):
+            #check if dir available (image)
+            check_dir_create('/data/images/')
+            check_dir_create('/result/images/')
             #generate unique id
             u_id = str(uuid.uuid1())
             st.image(input_data)
@@ -101,6 +110,9 @@ elif choose == "Video":
     input_data = st.file_uploader("Input Video", type=['mp4', 'mkv'])
     if input_data is not None:
         with st.spinner(text='Loading...'):
+            #check if dir available (image)
+            check_dir_create('/data/videos/')
+            check_dir_create('/result/videos/')
             #generate unique id
             u_id = str(uuid.uuid1())
             st.video(input_data)
