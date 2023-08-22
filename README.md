@@ -1,6 +1,7 @@
 # modul-yolopolban-frontend
 Front-end services for face and body recognition using YOLO V8 and Streamlit.
 
+- conda install -c conda-forge lap
 - Yolo V8 Environtment,
 - Cd ke file modul-yolopolban-frontend,
 - streamlit run main.py
