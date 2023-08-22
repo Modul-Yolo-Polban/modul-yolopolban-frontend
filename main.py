@@ -9,7 +9,10 @@ import os
 from pathlib import Path
 import uuid
 import moviepy.editor as moviepy
+from streamlit_webrtc import webrtc_streamer
 
+## Import File
+import helper
 
 ## Function Request API Recognition via Video.
 def analyze_video():
@@ -47,7 +50,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Input Type", ["Image", "Video", "Live Video"],
+    choose = option_menu("Input Type", ["Image", "Video", "Live Video CAM", "Live Video RTSP"],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -129,3 +132,33 @@ elif choose == "Video":
         convert_avi_to_mp4(string_path+'.avi', string_path+'.mp4')
         # Output Video
         st.video(string_path + '.mp4')
+
+## Analyzing Videos.
+elif choose == "Live Video CAM":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("Input type Video.")
+    
+    st.caption("Video Face and Body Recognition Live CAM")
+    #with st.form(key='nlpForm'):
+    model = selected_model(st.selectbox('Select model', model_list))
+
+    helper.play_webcam(0.5, helper.load_model(model))
+
+## Analyzing Videos.
+elif choose == "Live Video RTSP":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("Input type Video.")
+    
+    st.caption("Video Face and Body Recognition Live RTSP")
+    #with st.form(key='nlpForm'):
+    model = selected_model(st.selectbox('Select model', model_list))
+
+    helper.play_rtsp_stream(0.5, helper.load_model(model))
