@@ -26,12 +26,22 @@ def analyze_image():
 
 ## Function Model, returned path selected model 
 def selected_model(selected):
-    if selected == "Model Deteksi Sampah":
-        return "model/model_1.pt"
+    if selected == "Model Deteksi Sampah (3)":
+        path = "model/model_2.pt"
+        dir_crop = ["plastik", "kaleng", "kaca"]
+        return path, dir_crop
     elif selected == "Model Deteksi Wajah (1)":
-        return "model/model_face_recog_1.pt"
+        path = "model/model_face_recog_1.pt"
+        dir_crop = ["face", "body"]
+        return path, dir_crop
+    elif selected == "Model Deteksi Wajah dan Badan (2)":
+        path = "model/model_face_body_recog_1.pt"
+        dir_crop = ["face", "body"]
+        return path, dir_crop
     else :
-        return "xxx"
+        path = "model/model_face_recog_1.pt"
+        dir_crop = ["face", "body"]
+        return path, dir_crop
 
 ## Function to Convert videos .avi to .mp4
 def convert_avi_to_mp4(avi_file_path, output_name):
@@ -43,6 +53,31 @@ def check_dir_create(path):
     isExisting = os.path.exists(path)
     if isExisting != True:
         os.mkdir(path)
+
+def count_cropped_img(path, num_label):
+    data = ""
+    counted = 0
+    path = remove_ext(path) + '.txt'
+    f = open(path, "r")
+    for x in f:
+        data_line = x.split()
+        if int(data_line[0]) == num_label :
+            counted = counted + 1
+
+    return counted
+
+def remove_ext(path):
+    return str(os.path.splitext(path)[0])
+
+def get_crop_img(path, num_obj):
+    data_src = []
+    path = remove_ext(path)
+    for i in range(0, num_obj):
+        if i == 0:
+            data_src.append(path + '.jpg')
+        else :
+            data_src.append(path + str(i+1) + '.jpg')
+    return data_src
 
 # Hearder 
 st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
@@ -61,7 +96,7 @@ with st.sidebar:
     }
     )
 
-model_list = ["Model Deteksi Sampah", "Model Deteksi Wajah (1)", "Model C"]
+model_list = ["Model Deteksi Wajah (1)", "Model Deteksi Wajah dan Badan (2)", "Model Deteksi Sampah (3)"]
 
 ## Analyize Images.
 if choose == "Image":
@@ -83,7 +118,7 @@ if choose == "Image":
             picture = picture.save(f'data/images/{u_id}_{input_data.name}')
             source = f'data/images/{u_id}_{input_data.name}'
 
-    model = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', model_list))
 
     submit_button = st.button(label='Analyze')
 
@@ -91,10 +126,17 @@ if choose == "Image":
     if submit_button and model != "":
         st.info("Results")
         # Predict Function | For addition Status Execution place '.stderr' in last line code below.
-        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=images', 'mode=predict', 'model='+str(model), 'conf=0.5', 'save=True', 'source={}'.format(source)],capture_output=True, universal_newlines=True)
+        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=images', 'mode=predict', 'save_txt=True',
+            'model='+str(model), 'conf=0.5', 'save=True', 'show=True', 'save_crop=True', 'source={}'.format(source)],
+            capture_output=True, universal_newlines=True)
         # Output Img
         result_img = Image.open(f'result/images/{u_id}_{input_data.name}')
         st.image(result_img, caption='Hasil YOLO Detection')
+        st.info("Daftar Cropped Image")
+        total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
+        source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
+        for img_crop in source_crop :
+            st.image(img_crop)
 
 ## Analyzing Videos.
 elif choose == "Video":
@@ -117,7 +159,7 @@ elif choose == "Video":
                 f.write(input_data.getbuffer())
             source = f'data/videos/{u_id}_{input_data.name}'
 
-    model = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', model_list))
 
     submit_button = st.button(label='Analyze')
 
@@ -125,7 +167,7 @@ elif choose == "Video":
     if submit_button and model != "":
         st.info("Results")
         # Predict Function | For addition Status Execution place '.stderr' in last line code below.
-        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=videos', 'mode=predict', 'model='+str(model), 'conf=0.5', 'save=True', 'source={}'.format(source)],capture_output=True, universal_newlines=True)
+        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=videos', 'mode=predict', 'model='+str(model), 'conf=0.5', 'save=True', 'save_txt=True', 'source={}'.format(source)],capture_output=True, universal_newlines=True)
         # Remove Extension File, File Result is .avi
         string_path = str(os.path.splitext('result/videos/'+u_id+'_'+input_data.name)[0])
         # Transform Video from .avi to .mp4
@@ -144,7 +186,7 @@ elif choose == "Live Video CAM":
     
     st.caption("Video Face and Body Recognition Live CAM")
     #with st.form(key='nlpForm'):
-    model = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', model_list))
 
     helper.play_webcam(0.5, helper.load_model(model))
 
@@ -159,6 +201,6 @@ elif choose == "Live Video RTSP":
     
     st.caption("Video Face and Body Recognition Live RTSP")
     #with st.form(key='nlpForm'):
-    model = selected_model(st.selectbox('Select model', model_list))
+    model, Cropped = selected_model(st.selectbox('Select model', model_list))
 
     helper.play_rtsp_stream(0.5, helper.load_model(model))
