@@ -85,7 +85,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Input Type", ["Image", "Video", "Live Video CAM", "Live Video RTSP"],
+    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data'],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -99,7 +99,7 @@ with st.sidebar:
 model_list = ["Model Deteksi Wajah (1)", "Model Deteksi Wajah dan Badan (2)", "Model Deteksi Sampah (3)"]
 
 ## Analyize Images.
-if choose == "Image":
+if choose == "Image Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;} 
         </style> """, unsafe_allow_html=True)
@@ -135,11 +135,10 @@ if choose == "Image":
         st.info("Daftar Cropped Image")
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
-        for img_crop in source_crop :
-            st.image(img_crop)
+        
 
 ## Analyzing Videos.
-elif choose == "Video":
+elif choose == "Video Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
         span[data-baseweb="tag"]{background-color: #95e85a !important;} 
@@ -176,7 +175,7 @@ elif choose == "Video":
         st.video(string_path + '.mp4')
 
 ## Analyzing Videos.
-elif choose == "Live Video CAM":
+elif choose == "Live Video CAM Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
         span[data-baseweb="tag"]{background-color: #95e85a !important;} 
@@ -191,7 +190,7 @@ elif choose == "Live Video CAM":
     helper.play_webcam(0.5, helper.load_model(model))
 
 ## Analyzing Videos.
-elif choose == "Live Video RTSP":
+elif choose == "Live Video RTSP Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
         span[data-baseweb="tag"]{background-color: #95e85a !important;} 
@@ -204,3 +203,11 @@ elif choose == "Live Video RTSP":
     model, Cropped = selected_model(st.selectbox('Select model', model_list))
 
     helper.play_rtsp_stream(0.5, helper.load_model(model))
+
+elif choose == "View Data":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("Data View.")
