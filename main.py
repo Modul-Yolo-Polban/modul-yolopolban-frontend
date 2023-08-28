@@ -10,19 +10,22 @@ from pathlib import Path
 import uuid
 import moviepy.editor as moviepy
 from streamlit_webrtc import webrtc_streamer
+import socket
 
 ## Import File
 import helper
 
 ## Function Request API Recognition via Video.
-def analyze_video():
-    r = requests.post(f"#########")
+def save_croped_data(device:str, path:str):
+    r = requests.post(f"http://127.0.0.1:8000/crop_img/?device={device}&path={path}")
     return r
 
-## Function Request API Recognition via Image.
-def analyze_image():
-    r = requests.post(f"#########")
-    return r
+def get_cropped_data(stat):
+    if stat == "all":
+        r = requests.get(f"http://127.0.0.1:8000/crop_img/").json()
+        return r
+    else :
+        return 0
 
 ## Function Model, returned path selected model 
 def selected_model(selected):
@@ -135,7 +138,9 @@ if choose == "Image Detection":
         st.info("Daftar Cropped Image")
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
-        
+        for data_path in source_crop :
+            result = save_croped_data(socket.gethostname(), data_path)
+        st.info(result)
 
 ## Analyzing Videos.
 elif choose == "Video Detection":
@@ -211,3 +216,7 @@ elif choose == "View Data":
         </style> """, unsafe_allow_html=True)
     st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
     st.subheader("Data View.")
+
+    data = get_cropped_data('all')
+    for path in data:
+        st.write(path)
