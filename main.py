@@ -14,7 +14,7 @@ import socket
 import glob
 ## Import File
 import helper
-
+import shutil
 ## Function Request API Recognition via Video.
 def save_croped_data(device:str, path:str):
     r = requests.post(f"http://127.0.0.1:8000/crop_img/?device={device}&path={path}")
@@ -262,8 +262,10 @@ elif choose == "Add Person":
         result_img = Image.open(f'result/images/{u_id}_{input_data.name}')
         st.image(result_img, caption='Hasil YOLO Detection')
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
-        source_crop = get_crop_img(f'result/images/person/face/{u_id}_{input_data.name}', total_cropped)
+        source_crop = get_crop_img(f'result/images/crops/face/{u_id}_{input_data.name}', total_cropped)
         for data_path in source_crop :
+            shutil.copy(data_path, 'result/images/person/face/')
+            print(data_path)
             result = save_croped_data(socket.gethostname(), data_path)
             st.image(data_path)
             result = save_person_data(socket.gethostname(), input_name, data_path)
