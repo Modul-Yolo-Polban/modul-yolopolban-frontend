@@ -11,7 +11,7 @@ import uuid
 import moviepy.editor as moviepy
 from streamlit_webrtc import webrtc_streamer
 import socket
-
+import glob
 ## Import File
 import helper
 
@@ -82,13 +82,23 @@ def get_crop_img(path, num_obj):
             data_src.append(path + str(i+1) + '.jpg')
     return data_src
 
+def save_person_data(device:str, name:str, path:str):
+    r = requests.post(f"http://127.0.0.1:8000/save_img/?device={device}&name={name}&path={path}")
+    return r
+
+def load_person_images():
+    r = requests.get(f"http://127.0.0.1:8000/save_img/")
+
+    return r.json()
+
+
 # Hearder 
 st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.png', layout="centered", initial_sidebar_state="auto", menu_items=None)
 
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data'],
+    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -140,9 +150,10 @@ if choose == "Image Detection":
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
         for data_path in source_crop :
             result = save_croped_data(socket.gethostname(), data_path)
+            st.image(data_path)
         st.info(result)
 
-## Analyzing Videos.
+## Analyzing Videos.a
 elif choose == "Video Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
@@ -220,3 +231,57 @@ elif choose == "View Data":
     data = get_cropped_data('all')
     for path in data:
         st.write(path)
+
+elif choose == "Add Person":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("Add Person to Database.")
+    input_name = st.text_input("Name", value="person")
+    input_data = st.file_uploader("Input Image", type=['png', 'jpeg', 'jpg'])
+    if input_data is not None:
+        with st.spinner(text='Loading...'):
+            #generate unique id
+            u_id = str(uuid.uuid1())
+            st.image(input_data)
+            picture = Image.open(input_data)
+            picture = picture.save(f'data/images/{u_id}_{input_data.name}')
+            source = f'data/images/{u_id}_{input_data.name}'
+    crop =  ""
+    submit_button_person = st.button(label='Add User')
+    print(submit_button_person)
+    if submit_button_person == True:
+        st.info("Results")
+        # Predict Function | For addition Status Execution place '.stderr' in last line code below.
+        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=images', 'mode=predict', 'save_txt=True',
+            'model=model/model_face_recog_1.pt', 'conf=0.5', 'save=True', 'show=True', 'save_crop=True', 'source={}'.format(source)],
+            capture_output=True, universal_newlines=True)
+        # Output Img
+        result_img = Image.open(f'result/images/{u_id}_{input_data.name}')
+        st.image(result_img, caption='Hasil YOLO Detection')
+        total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
+        source_crop = get_crop_img(f'result/images/person/face/{u_id}_{input_data.name}', total_cropped)
+        for data_path in source_crop :
+            result = save_croped_data(socket.gethostname(), data_path)
+            st.image(data_path)
+            result = save_person_data(socket.gethostname(), input_name, data_path)
+        st.info(result)
+
+elif choose == "View Person":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("List of Registered Person.")
+    image_files=load_person_images()
+    images = [{"image": item["imgpath"], "name": item["name"]}  for item in image_files]
+    #for data_path in image_files :
+    print(images)
+    for image in images:
+        st.text(image['name'])
+        st.image(image['image'], width=256)
+    # st.text
+    # st.image("result/images/person/face/"+image_files)
