@@ -149,32 +149,73 @@ if choose == "Image Detection":
         st.info("Daftar Cropped Image")
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
-        for data_path in source_crop :
-            result = save_croped_data(socket.gethostname(), data_path)
+        
+        # for data_path in source_crop :
+        #     result = save_croped_data(socket.gethostname(), data_path)
             
+        #     print("data path:")
+        #     print(data_path)
+        #     #face recognition
+        #     dfs = DeepFace.find(img_path = data_path,
+        #         db_path = "result/images/person/face", 
+        #         model_name = model_list_deepface[1],
+        #         enforce_detection=False
+        #     )
+        #     try:
+        #         # Your existing code here
+        #         pathresult = dfs[0]['identity'][0]
+        #         result_name = os.path.dirname(pathresult)
+        #         result_name = result_name.split('/')[-1]
+        #         result_name = result_name.split('\\')[-1]
+        #     except KeyError as e:
+        #         # Handle the exception here, e.g., print an error message
+        #         print(f"An error occurred: {e}")
+        #         result_name = "Tidak terdaftar"
+        #     print(result_name)
+        #     st.text(result_name)
+        #     st.image(data_path, width=256)
+        # st.info(result)
+        num_columns = 3
+
+        # Calculate the number of rows needed based on the number of items and columns
+        num_items = len(source_crop)
+        num_rows = (num_items + num_columns - 1) // num_columns
+        
+        # Create a layout with the specified number of columns
+        columns = [st.columns(num_columns) for _ in range(num_rows)]
+
+        for i, data_path in enumerate(source_crop):
+            result = save_croped_data(socket.gethostname(), data_path)
+
             print("data path:")
             print(data_path)
-            #face recognition
-            dfs = DeepFace.find(img_path = data_path,
-                db_path = "result/images/person/face", 
-                model_name = model_list_deepface[1],
+            # Face recognition
+            dfs = DeepFace.find(
+                img_path=data_path,
+                db_path="result/images/person/face",
+                model_name=model_list_deepface[1],
                 enforce_detection=False
             )
+
             try:
                 # Your existing code here
                 pathresult = dfs[0]['identity'][0]
                 result_name = os.path.dirname(pathresult)
                 result_name = result_name.split('/')[-1]
                 result_name = result_name.split('\\')[-1]
-                print(result_name)
-                st.text(result_name)
-                st.image(data_path, width=256)
             except KeyError as e:
                 # Handle the exception here, e.g., print an error message
                 print(f"An error occurred: {e}")
                 result_name = "Tidak terdaftar"
-            
-        st.info(result)
+
+            # Calculate the row and column index for the current item
+            row_index = i // num_columns
+            col_index = i % num_columns
+
+            # Place content in the appropriate column
+            with columns[row_index][col_index]:
+                st.text(result_name)
+                st.image(data_path, width=256)
 
 ## Analyzing Videos.a
 elif choose == "Video Detection":
@@ -310,9 +351,22 @@ elif choose == "View Person":
     images = [{"image": item["imgpath"], "name": item["name"]}  for item in image_files]
     #for data_path in image_files :
     print(images)
-    for image in images:
-        st.text(image['name'])
-        st.image(image['image'], width=256)
+    num_columns = 3
+    num_items = len(images)
+    num_rows = (num_items + num_columns - 1) // num_columns
+    columns = [st.columns(num_columns) for _ in range(num_rows)]
+    # for image in images:
+    #     st.text(image['name'])
+    #     st.image(image['image'], width=256)
+    # Populate the grid with dynamic data (name and picture)
+    for i, row in enumerate(columns):
+        for j, col in enumerate(row):
+            index = i * num_columns + j
+            if index < num_items:
+                item = images[index]
+                col.write(item["name"])
+                col.image(item["image"], use_column_width=True)
+                
     # st.text
     # st.image("result/images/person/face/"+image_files)
 
