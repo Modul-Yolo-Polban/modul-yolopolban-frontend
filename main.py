@@ -145,13 +145,13 @@ if choose == "Image Detection":
             capture_output=True, universal_newlines=True)
         # Output Img
         result_img = Image.open(f'result/images/{u_id}_{input_data.name}')
-        st.image(result_img, caption='Hasil YOLO Detection')
+        st.image(result_img, caption='Hasil YOLO Detection', width=256)
         st.info("Daftar Cropped Image")
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
         for data_path in source_crop :
             result = save_croped_data(socket.gethostname(), data_path)
-            st.image(data_path)
+            
             print("data path:")
             print(data_path)
             #face recognition
@@ -160,8 +160,20 @@ if choose == "Image Detection":
                 model_name = model_list_deepface[1],
                 enforce_detection=False
             )
-            for i in dfs:
-                print(i)
+            try:
+                # Your existing code here
+                pathresult = dfs[0]['identity'][0]
+                result_name = os.path.dirname(pathresult)
+                result_name = result_name.split('/')[-1]
+                result_name = result_name.split('\\')[-1]
+                print(result_name)
+                st.text(result_name)
+                st.image(data_path, width=256)
+            except KeyError as e:
+                # Handle the exception here, e.g., print an error message
+                print(f"An error occurred: {e}")
+                result_name = "Tidak terdaftar"
+            
         st.info(result)
 
 ## Analyzing Videos.a
