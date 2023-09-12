@@ -215,7 +215,7 @@ if choose == "Image Detection":
             # Place content in the appropriate column
             with columns[row_index][col_index]:
                 st.text(result_name)
-                st.image(data_path, width=256)
+                st.image(data_path, width=128)
 
 ## Analyzing Videos.a
 elif choose == "Video Detection":
@@ -338,6 +338,15 @@ elif choose == "Add Person":
             result = save_croped_data(socket.gethostname(), data_path)
             st.image(data_path)
             result = save_person_data(socket.gethostname(), input_name, f'result/images/person/face/{input_name}/{u_id}_{input_data.name}')
+        deepface_rep = "result/images/person/face/representations_facenet.pkl"
+        if os.path.exists(deepface_rep):
+            try:
+                os.remove(deepface_rep)
+                print(f"File '{deepface_rep}' has been deleted.")
+            except OSError as e:
+                print(f"Error deleting the file '{deepface_rep}': {e}")
+        else:
+            print(f"File '{deepface_rep}' does not exist.")
         st.info(result)
 
 elif choose == "View Person":
