@@ -10,6 +10,7 @@ from pathlib import Path
 import uuid
 import moviepy.editor as moviepy
 from streamlit_webrtc import webrtc_streamer
+from deepface import DeepFace
 import socket
 import glob
 ## Import File
@@ -98,7 +99,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
+    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person', 'Deepface'],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -110,7 +111,7 @@ with st.sidebar:
     )
 
 model_list = ["Model Deteksi Wajah (1)", "Model Deteksi Wajah dan Badan (2)", "Model Deteksi Sampah (3)"]
-
+model_list_deepface = ["VGG-Face", "Facenet", "Facenet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace"]
 ## Analyize Images.
 if choose == "Image Detection":
     st.markdown(""" <style> .font {
@@ -287,3 +288,37 @@ elif choose == "View Person":
         st.image(image['image'], width=256)
     # st.text
     # st.image("result/images/person/face/"+image_files)
+
+elif choose == "Deepface":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)    
+    st.subheader("Input type Image.")
+    input_data_deepface = st.file_uploader("Input Image", type=['png', 'jpeg', 'jpg'], accept_multiple_files=True)
+    for input_data_deepface in input_data_deepface:
+        with st.spinner(text='Loading...'):
+            #generate unique id
+            u_id = str(uuid.uuid1())
+            st.image(input_data_deepface)
+            picture = Image.open(input_data_deepface)
+            picture = picture.save(f'data/images/{u_id}_{input_data_deepface.name}')
+            source = f'data/images/{u_id}_{input_data_deepface.name}'
+
+    submit_button = st.button(label='Deepface')
+    model= selected_model(st.selectbox('Select model', model_list_deepface))
+
+    if submit_button:
+        st.info("Results")
+        #verification
+        # result = DeepFace.verify(img1_path = f'result/images/{u_id}_{input_data_deepface.name}', img2_path = f'result/images/{u_id}_{input_data_deepface.name}')
+        result = DeepFace.verify(img1_path = f'result/images/{u_id}_{input_data_deepface.name}', 
+                img2_path = f'result/images/{u_id}_{input_data_deepface.name}', 
+                model_name = model
+                )
+
+        #recognition
+        dfs = DeepFace.find(img_path = "img1.jpg", db_path = "C:/workspace/my_db")
+
+        #
+
