@@ -99,7 +99,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person', 'Deepface'],
+    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -152,6 +152,16 @@ if choose == "Image Detection":
         for data_path in source_crop :
             result = save_croped_data(socket.gethostname(), data_path)
             st.image(data_path)
+            print("data path:")
+            print(data_path)
+            #face recognition
+            dfs = DeepFace.find(img_path = data_path,
+                db_path = "result/images/person/face", 
+                model_name = model_list_deepface[1],
+                enforce_detection=False
+            )
+            for i in dfs:
+                print(i)
         st.info(result)
 
 ## Analyzing Videos.a
@@ -265,11 +275,16 @@ elif choose == "Add Person":
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/face/{u_id}_{input_data.name}', total_cropped)
         for data_path in source_crop :
-            shutil.copy(data_path, 'result/images/person/face/')
+            isExist = os.path.exists(f'result/images/person/face/{input_name}/')
+            if not isExist:
+                # Create a new directory because it does not exist
+                os.makedirs(f'result/images/person/face/{input_name}/')
+                print("The new directory is created!")
+            shutil.copy(data_path, f'result/images/person/face/{input_name}/')
             print(data_path)
             result = save_croped_data(socket.gethostname(), data_path)
             st.image(data_path)
-            result = save_person_data(socket.gethostname(), input_name, data_path)
+            result = save_person_data(socket.gethostname(), input_name, f'result/images/person/face/{input_name}/{u_id}_{input_data.name}')
         st.info(result)
 
 elif choose == "View Person":
@@ -288,37 +303,4 @@ elif choose == "View Person":
         st.image(image['image'], width=256)
     # st.text
     # st.image("result/images/person/face/"+image_files)
-
-elif choose == "Deepface":
-    st.markdown(""" <style> .font {
-        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;} 
-        </style> """, unsafe_allow_html=True)
-    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)    
-    st.subheader("Input type Image.")
-    input_data_deepface = st.file_uploader("Input Image", type=['png', 'jpeg', 'jpg'], accept_multiple_files=True)
-    for input_data_deepface in input_data_deepface:
-        with st.spinner(text='Loading...'):
-            #generate unique id
-            u_id = str(uuid.uuid1())
-            st.image(input_data_deepface)
-            picture = Image.open(input_data_deepface)
-            picture = picture.save(f'data/images/{u_id}_{input_data_deepface.name}')
-            source = f'data/images/{u_id}_{input_data_deepface.name}'
-
-    submit_button = st.button(label='Deepface')
-    model= selected_model(st.selectbox('Select model', model_list_deepface))
-
-    if submit_button:
-        st.info("Results")
-        #verification
-        # result = DeepFace.verify(img1_path = f'result/images/{u_id}_{input_data_deepface.name}', img2_path = f'result/images/{u_id}_{input_data_deepface.name}')
-        result = DeepFace.verify(img1_path = f'result/images/{u_id}_{input_data_deepface.name}', 
-                img2_path = f'result/images/{u_id}_{input_data_deepface.name}', 
-                model_name = model
-                )
-
-        #recognition
-        dfs = DeepFace.find(img_path = "img1.jpg", db_path = "C:/workspace/my_db")
-
-        #
 
