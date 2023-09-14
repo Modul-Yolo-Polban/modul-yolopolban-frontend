@@ -15,7 +15,9 @@ import socket
 import glob
 ## Import File
 import helper
+import cv2
 import shutil
+from ultralytics import YOLO
 ## Function Request API Recognition via Video.
 def save_croped_data(device:str, path:str):
     r = requests.post(f"http://127.0.0.1:8000/crop_img/?device={device}&path={path}")
@@ -99,7 +101,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
+    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Video Detection2", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -150,31 +152,6 @@ if choose == "Image Detection":
         total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
         source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
         
-        # for data_path in source_crop :
-        #     result = save_croped_data(socket.gethostname(), data_path)
-            
-        #     print("data path:")
-        #     print(data_path)
-        #     #face recognition
-        #     dfs = DeepFace.find(img_path = data_path,
-        #         db_path = "result/images/person/face", 
-        #         model_name = model_list_deepface[1],
-        #         enforce_detection=False
-        #     )
-        #     try:
-        #         # Your existing code here
-        #         pathresult = dfs[0]['identity'][0]
-        #         result_name = os.path.dirname(pathresult)
-        #         result_name = result_name.split('/')[-1]
-        #         result_name = result_name.split('\\')[-1]
-        #     except KeyError as e:
-        #         # Handle the exception here, e.g., print an error message
-        #         print(f"An error occurred: {e}")
-        #         result_name = "Tidak terdaftar"
-        #     print(result_name)
-        #     st.text(result_name)
-        #     st.image(data_path, width=256)
-        # st.info(result)
         num_columns = 3
 
         # Calculate the number of rows needed based on the number of items and columns
@@ -218,6 +195,105 @@ if choose == "Image Detection":
                 st.image(data_path, width=128)
 
 ## Analyzing Videos.a
+elif choose == "Video Detection2":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    st.subheader("Input type Video.")
+    
+    st.caption("Video Face and Body Recognition")
+    #with st.form(key='nlpForm'):
+    source_vid = st.file_uploader("Input Video", type=['mp4', 'mkv'])
+    if source_vid is not None:
+        with st.spinner(text='Loading...'):
+            #generate unique id
+            u_id = str(uuid.uuid1())
+            st.video(source_vid)
+            with open(os.path.join("data", "videos", u_id+'_'+source_vid.name), "wb") as f:
+                f.write(source_vid.getbuffer())
+            source = f'data/videos/{u_id}_{source_vid.name}'
+
+    model_path, crop = selected_model(st.selectbox('Select model', model_list))
+    
+    submit_button = st.button(label='Analyze')
+    if submit_button and model_path != "":
+        try:
+            model = YOLO(model_path)
+        except Exception as ex:
+            st.error(
+                f"Unable to load model. Check the specified path: {model_path}")
+            st.error(ex)
+        with open(str(source), 'rb') as video_file:
+            video_bytes = video_file.read()
+        if video_bytes:
+            st.video(video_bytes)
+            vid_cap = cv2.VideoCapture(
+                source)
+            st_frame = st.empty()
+            print("here")
+            while (vid_cap.isOpened()):
+                success, image = vid_cap.read()
+                if success:
+                    #image = cv2.resize(image, (720, int(720*(9/16))))
+                    res = model.predict(image, conf=0.5, save_crop=True)
+                    result_tensor = res[0].boxes
+                    res_plotted = res[0].plot()
+                    st_frame.image(res_plotted,
+                                caption='Detected Video',
+                                channels="BGR",
+                                use_column_width=True
+                                )
+                else:
+                    vid_cap.release()
+                    break
+            st.info("Daftar Cropped Image")
+            total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
+            source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
+            
+            num_columns = 3
+
+            # Calculate the number of rows needed based on the number of items and columns
+            num_items = len(source_crop)
+            num_rows = (num_items + num_columns - 1) // num_columns
+            
+            # Create a layout with the specified number of columns
+            columns = [st.columns(num_columns) for _ in range(num_rows)]
+
+            for i, data_path in enumerate(source_crop):
+                result = save_croped_data(socket.gethostname(), data_path)
+
+                print("data path:")
+                print(data_path)
+                # Face recognition
+                dfs = DeepFace.find(
+                    img_path=data_path,
+                    db_path="result/images/person/face",
+                    model_name=model_list_deepface[1],
+                    enforce_detection=False
+                )
+
+                try:
+                    # Your existing code here
+                    pathresult = dfs[0]['identity'][0]
+                    result_name = os.path.dirname(pathresult)
+                    result_name = result_name.split('/')[-1]
+                    result_name = result_name.split('\\')[-1]
+                except KeyError as e:
+                    # Handle the exception here, e.g., print an error message
+                    print(f"An error occurred: {e}")
+                    result_name = "Tidak terdaftar"
+
+                # Calculate the row and column index for the current item
+                row_index = i // num_columns
+                col_index = i % num_columns
+
+                # Place content in the appropriate column
+                with columns[row_index][col_index]:
+                    st.text(result_name)
+                    st.image(data_path, width=128)
+
 elif choose == "Video Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
