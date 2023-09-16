@@ -10,3 +10,4 @@ streamlit-webrtc
 pytube
 pafy
 deepface
+pandas

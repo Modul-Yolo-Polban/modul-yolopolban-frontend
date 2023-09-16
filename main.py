@@ -18,7 +18,9 @@ import helper
 import cv2
 import shutil
 from ultralytics import YOLO
+import pandas as pd
 ## Function Request API Recognition via Video.
+
 def save_croped_data(device:str, path:str):
     r = requests.post(f"http://127.0.0.1:8000/crop_img/?device={device}&path={path}")
     return r
@@ -220,6 +222,16 @@ elif choose == "Video Detection2":
     submit_button = st.button(label='Analyze')
     if submit_button and model_path != "":
         try:
+            directory_path = 'result/videos/predict/crops/face/'
+            # List all files in the directory
+            file_list = os.listdir(directory_path)
+
+            # Iterate through the files and delete each one
+            for file_name in file_list:
+                file_path = os.path.join(directory_path, file_name)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+
             model = YOLO(model_path)
         except Exception as ex:
             st.error(
@@ -228,7 +240,7 @@ elif choose == "Video Detection2":
         with open(str(source), 'rb') as video_file:
             video_bytes = video_file.read()
         if video_bytes:
-            st.video(video_bytes)
+            #st.video(video_bytes)
             vid_cap = cv2.VideoCapture(
                 source)
             st_frame = st.empty()
@@ -237,7 +249,7 @@ elif choose == "Video Detection2":
                 success, image = vid_cap.read()
                 if success:
                     #image = cv2.resize(image, (720, int(720*(9/16))))
-                    res = model.predict(image, conf=0.5, save_crop=True)
+                    res = model.predict(image, conf=0.5, save_crop=True, project='result/videos', mode="predict", exist_ok=True)
                     result_tensor = res[0].boxes
                     res_plotted = res[0].plot()
                     st_frame.image(res_plotted,
@@ -249,19 +261,11 @@ elif choose == "Video Detection2":
                     vid_cap.release()
                     break
             st.info("Daftar Cropped Image")
-            total_cropped = count_cropped_img(f'result/images/labels/{u_id}_{input_data.name}', 0)
-            source_crop = get_crop_img(f'result/images/crops/{crop[0]}/{u_id}_{input_data.name}', total_cropped)
-            
+            source_crop = os.listdir('result/videos/predict/crops/face/')
             num_columns = 3
-
-            # Calculate the number of rows needed based on the number of items and columns
-            num_items = len(source_crop)
-            num_rows = (num_items + num_columns - 1) // num_columns
-            
-            # Create a layout with the specified number of columns
-            columns = [st.columns(num_columns) for _ in range(num_rows)]
-
+            data_names = []
             for i, data_path in enumerate(source_crop):
+                data_path = f'result/videos/predict/crops/face/{data_path}'
                 result = save_croped_data(socket.gethostname(), data_path)
 
                 print("data path:")
@@ -284,15 +288,35 @@ elif choose == "Video Detection2":
                     # Handle the exception here, e.g., print an error message
                     print(f"An error occurred: {e}")
                     result_name = "Tidak terdaftar"
-
+                print(f'data pat = {previous_data_path}')
+                if result_name == "Tidak terdaftar":
+                    data_names.append({"Name": result_name, "Picture": data_path})
+                elif all(entry["Name"] != result_name for entry in data_names):
+                    # Append the new name and a corresponding placeholder picture
+                    data_names.append({"Name": result_name, "Picture": data_path})
+                    print(f'append {result_name}')
+                else:
+                    print(f'dont append {result_name}')
+                    continue
+            
+            # Calculate the number of rows needed based on the number of items and columns
+            num_items = len(data_names)
+            num_rows = (num_items + num_columns - 1) // num_columns
+            
+            # Create a layout with the specified number of columns
+            columns = [st.columns(num_columns) for _ in range(num_rows)]
+            print(data_names)
+            print(len(data_names))
+            for i in range(len(data_names)):
                 # Calculate the row and column index for the current item
                 row_index = i // num_columns
                 col_index = i % num_columns
 
                 # Place content in the appropriate column
                 with columns[row_index][col_index]:
-                    st.text(result_name)
-                    st.image(data_path, width=128)
+                    st.text(data_names[i]['Name'])
+                    st.image(data_names[i]['Picture'], width=128)
+
 
 elif choose == "Video Detection":
     st.markdown(""" <style> .font {
@@ -390,8 +414,10 @@ elif choose == "Add Person":
             picture = picture.save(f'data/images/{u_id}_{input_data.name}')
             source = f'data/images/{u_id}_{input_data.name}'
     crop =  ""
-    submit_button_person = st.button(label='Add User')
+    submit_button_person = st.button(label='Add User (Detect The Face)')
+    submit_button_face = st.button(label='Add User (Save Only)')
     print(submit_button_person)
+
     if submit_button_person == True:
         st.info("Results")
         # Predict Function | For addition Status Execution place '.stderr' in last line code below.
@@ -425,6 +451,26 @@ elif choose == "Add Person":
             print(f"File '{deepface_rep}' does not exist.")
         st.info(result)
 
+    if submit_button_face == True:
+        isExist = os.path.exists(f'result/images/person/face/{input_name}/')
+        if not isExist:
+            # Create a new directory because it does not exist
+            os.makedirs(f'result/images/person/face/{input_name}/')
+            print("The new directory is created!")
+        picture = Image.open(input_data)
+        picture = picture.save(f'result/images/person/face/{input_name}/{u_id}_{input_data.name}')
+        result = save_person_data(socket.gethostname(), input_name, f'result/images/person/face/{input_name}/{u_id}_{input_data.name}')
+        deepface_rep = "result/images/person/face/representations_facenet.pkl"
+        if os.path.exists(deepface_rep):
+            try:
+                os.remove(deepface_rep)
+                print(f"File '{deepface_rep}' has been deleted.")
+            except OSError as e:
+                print(f"Error deleting the file '{deepface_rep}': {e}")
+        else:
+            print(f"File '{deepface_rep}' does not exist.")
+        st.info(result)
+        
 elif choose == "View Person":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
