@@ -19,6 +19,8 @@ import cv2
 import shutil
 from ultralytics import YOLO
 import pandas as pd
+import json
+
 ## Function Request API Recognition via Video.
 
 def save_croped_data(device:str, path:str):
@@ -32,24 +34,37 @@ def get_cropped_data(stat):
     else :
         return 0
 
+## Function MODEL
+def save_model(name:str, path:str):
+    r = requests.post(f"http://127.0.0.1:8000/model/?name={name}&path={path}")
+    return r
+
+def get_model(stat):
+    if stat == "all":
+        r = requests.get(f"http://127.0.0.1:8000/model/").json()
+        return r
+    else :
+        return 0
+
+def get_model_list() :
+    json_model = get_model('all')
+    model_list = []
+
+    for x in json_model :
+        model_list.append(x['name'])
+
+    return model_list
+
 ## Function Model, returned path selected model 
 def selected_model(selected):
-    if selected == "Model Deteksi Sampah (3)":
-        path = "model/model_2.pt"
-        dir_crop = ["plastik", "kaleng", "kaca"]
-        return path, dir_crop
-    elif selected == "Model Deteksi Wajah (1)":
-        path = "model/model_face_recog_1.pt"
-        dir_crop = ["face", "body"]
-        return path, dir_crop
-    elif selected == "Model Deteksi Wajah dan Badan (2)":
-        path = "model/model_face_body_recog_1.pt"
-        dir_crop = ["face", "body"]
-        return path, dir_crop
-    else :
-        path = "model/model_face_recog_1.pt"
-        dir_crop = ["face", "body"]
-        return path, dir_crop
+    json_model = get_model('all')
+    for x in json_model :
+        if x['name'] == selected :
+            path = x['path']
+
+    dir_crop = ["face", "body"]
+    
+    return path, dir_crop
 
 ## Function to Convert videos .avi to .mp4
 def convert_avi_to_mp4(avi_file_path, output_name):
@@ -103,7 +118,18 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", ["Image Detection", "Video Detection", "Video Detection2", "Live Video CAM Detection", "Live Video RTSP Detection", 'View Data', 'Add Person', 'View Person'],
+    choose = option_menu("Menu", 
+        [
+        "Image Detection", 
+        "Video Detection", 
+        "Video Detection2", 
+        "Live Video CAM Detection", 
+        "Live Video RTSP Detection", 
+        'View Data', 
+        'Add Person', 
+        'View Person',
+        'Edit Model List'
+        ],
                          icons=['grid fill', 'search heart'],
                          menu_icon="app-indicator", default_index=0,
                          styles={
@@ -114,8 +140,8 @@ with st.sidebar:
     }
     )
 
-model_list = ["Model Deteksi Wajah (1)", "Model Deteksi Wajah dan Badan (2)", "Model Deteksi Sampah (3)"]
 model_list_deepface = ["VGG-Face", "Facenet", "Facenet512", "OpenFace", "DeepFace", "DeepID", "ArcFace", "Dlib", "SFace"]
+
 ## Analyize Images.
 if choose == "Image Detection":
     st.markdown(""" <style> .font {
@@ -136,7 +162,7 @@ if choose == "Image Detection":
             picture = picture.save(f'data/images/{u_id}_{input_data.name}')
             source = f'data/images/{u_id}_{input_data.name}'
 
-    model, crop = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', get_model_list()))
 
     submit_button = st.button(label='Analyze')
 
@@ -217,7 +243,7 @@ elif choose == "Video Detection2":
                 f.write(source_vid.getbuffer())
             source = f'data/videos/{u_id}_{source_vid.name}'
 
-    model_path, crop = selected_model(st.selectbox('Select model', model_list))
+    model_path, crop = selected_model(st.selectbox('Select model', get_model_list()))
     
     submit_button = st.button(label='Analyze')
     if submit_button and model_path != "":
@@ -338,7 +364,7 @@ elif choose == "Video Detection":
                 f.write(input_data.getbuffer())
             source = f'data/videos/{u_id}_{input_data.name}'
 
-    model, crop = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', get_model_list()))
 
     submit_button = st.button(label='Analyze')
 
@@ -365,7 +391,7 @@ elif choose == "Live Video CAM Detection":
     
     st.caption("Video Face and Body Recognition Live CAM")
     #with st.form(key='nlpForm'):
-    model, crop = selected_model(st.selectbox('Select model', model_list))
+    model, crop = selected_model(st.selectbox('Select model', get_model_list()))
 
     helper.play_webcam(0.5, helper.load_model(model))
 
@@ -380,7 +406,7 @@ elif choose == "Live Video RTSP Detection":
     
     st.caption("Video Face and Body Recognition Live RTSP")
     #with st.form(key='nlpForm'):
-    model, Cropped = selected_model(st.selectbox('Select model', model_list))
+    model, Cropped = selected_model(st.selectbox('Select model', get_model_list()))
 
     helper.play_rtsp_stream(0.5, helper.load_model(model))
 
@@ -501,3 +527,40 @@ elif choose == "View Person":
     # st.text
     # st.image("result/images/person/face/"+image_files)
 
+elif choose == "Edit Model List":
+    st.markdown(""" <style> .font {
+        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
+        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
+        </style> """, unsafe_allow_html=True)
+    st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
+    
+    ## Input data Model
+    st.subheader("Add Model.")
+    input_name = st.text_input("Name", value="Model Face Recognition [Example]")
+    input_data = st.file_uploader("Input Model", type=['pt'])
+    if input_data is not None:
+        with st.spinner(text='Loading...'):
+            #generate unique id
+            u_id = str(uuid.uuid1())
+
+    ## If Button Clicked
+    submit_button_person = st.button(label='Add New Model')
+    if submit_button_person == True:
+        # Save uploaded file to 'F:/tmp' folder.
+        folder = 'model/'
+        path_model = Path(folder, f'{u_id}_{input_data.name}')
+        with open(path_model, mode='wb') as w:
+            w.write(input_data.getvalue())
+
+        if path_model.exists():
+            st.success(f'File {input_data.name} is successfully saved!')
+            result = save_model(input_name, path_model)
+            #st.info(result)
+        else :
+            st.warning('Upload model is failed', icon="⚠")
+
+    ## Show data Model
+    st.subheader("List of Model.")
+    data = get_model('all')
+    for path in data:
+        st.write(path)

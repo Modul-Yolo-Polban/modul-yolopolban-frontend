@@ -9,5 +9,6 @@ MoviePy
 streamlit-webrtc
 pytube
 pafy
+typing-extensions>=4.6.1
 deepface
 pandas
