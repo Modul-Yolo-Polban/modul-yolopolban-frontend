@@ -58,6 +58,7 @@ def get_model_list() :
 ## Function Model, returned path selected model 
 def selected_model(selected):
     json_model = get_model('all')
+    path = ""
     for x in json_model :
         if x['name'] == selected :
             path = x['path']
@@ -118,7 +119,7 @@ st.set_page_config(page_title='Modul YOLO Polban', page_icon='assets/polban_ico.
 # UI Layout
 ## Sidemenu / Sidebar
 with st.sidebar:
-    choose = option_menu("Menu", 
+    choose = option_menu("Navigation Menu", 
         [
         "Image Detection", 
         "Video Detection", 
@@ -130,8 +131,18 @@ with st.sidebar:
         'View Person',
         'Edit Model List'
         ],
-                         icons=['grid fill', 'search heart'],
-                         menu_icon="app-indicator", default_index=0,
+                         icons=[
+                            'card-image', 
+                            'camera-video', 
+                            'camera-video-fill', 
+                            'camera-fill', 
+                            'circle', 
+                            'file-earmark-person',
+                            'person-add', 
+                            'file-person', 
+                            'view-list'
+                         ],
+                         menu_icon="menu-app", default_index=0,
                          styles={
         "container": {"padding": "5!important", "background-color": "#939ca3"},
         "icon": {"color": "orange", "font-size": "20px"}, 
