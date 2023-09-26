@@ -123,10 +123,8 @@ with st.sidebar:
         [
         "Image Detection", 
         "Video Detection", 
-        "Video Detection2", 
         "Live Video CAM Detection", 
         "Live Video RTSP Detection", 
-        'View Data', 
         'Add Person', 
         'View Person',
         'Edit Model List'
@@ -168,7 +166,7 @@ if choose == "Image Detection":
         with st.spinner(text='Loading...'):
             #generate unique id
             u_id = str(uuid.uuid1())
-            st.image(input_data)
+            st.image(input_data, width=300)
             picture = Image.open(input_data)
             picture = picture.save(f'data/images/{u_id}_{input_data.name}')
             source = f'data/images/{u_id}_{input_data.name}'
@@ -234,7 +232,7 @@ if choose == "Image Detection":
                 st.image(data_path, width=128)
 
 ## Analyzing Videos.a
-elif choose == "Video Detection2":
+elif choose == "Video Detection":
     st.markdown(""" <style> .font {
         font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
         span[data-baseweb="tag"]{background-color: #95e85a !important;} 
@@ -325,7 +323,6 @@ elif choose == "Video Detection2":
                     # Handle the exception here, e.g., print an error message
                     print(f"An error occurred: {e}")
                     result_name = "Tidak terdaftar"
-                print(f'data pat = {previous_data_path}')
                 if result_name == "Tidak terdaftar":
                     data_names.append({"Name": result_name, "Picture": data_path})
                 elif all(entry["Name"] != result_name for entry in data_names):
@@ -353,43 +350,6 @@ elif choose == "Video Detection2":
                 with columns[row_index][col_index]:
                     st.text(data_names[i]['Name'])
                     st.image(data_names[i]['Picture'], width=128)
-
-
-elif choose == "Video Detection":
-    st.markdown(""" <style> .font {
-        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
-        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
-        </style> """, unsafe_allow_html=True)
-    st.markdown('<p class="font">Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
-    st.subheader("Input type Video.")
-    
-    st.caption("Video Face and Body Recognition")
-    #with st.form(key='nlpForm'):
-    input_data = st.file_uploader("Input Video", type=['mp4', 'mkv'])
-    if input_data is not None:
-        with st.spinner(text='Loading...'):
-            #generate unique id
-            u_id = str(uuid.uuid1())
-            st.video(input_data)
-            with open(os.path.join("data", "videos", u_id+'_'+input_data.name), "wb") as f:
-                f.write(input_data.getbuffer())
-            source = f'data/videos/{u_id}_{input_data.name}'
-
-    model, crop = selected_model(st.selectbox('Select model', get_model_list()))
-
-    submit_button = st.button(label='Analyze')
-
-    # Button Analyize On-click :
-    if submit_button and model != "":
-        st.info("Results")
-        # Predict Function | For addition Status Execution place '.stderr' in last line code below.
-        subprocess.run(['yolo', 'task=detect', 'exist_ok=True', 'project=result', 'name=videos', 'mode=predict', 'model='+str(model), 'conf=0.5', 'save=True', 'save_txt=True', 'source={}'.format(source)],capture_output=True, universal_newlines=True)
-        # Remove Extension File, File Result is .avi
-        string_path = str(os.path.splitext('result/videos/'+u_id+'_'+input_data.name)[0])
-        # Transform Video from .avi to .mp4
-        convert_avi_to_mp4(string_path+'.avi', string_path+'.mp4')
-        # Output Video
-        st.video(string_path + '.mp4')
 
 ## Analyzing Videos.
 elif choose == "Live Video CAM Detection":
@@ -420,18 +380,6 @@ elif choose == "Live Video RTSP Detection":
     model, Cropped = selected_model(st.selectbox('Select model', get_model_list()))
 
     helper.play_rtsp_stream(0.5, helper.load_model(model))
-
-elif choose == "View Data":
-    st.markdown(""" <style> .font {
-        font-size:35px ; font-family: 'Cooper Black'; color: #FF9633;}
-        span[data-baseweb="tag"]{background-color: #95e85a !important;} 
-        </style> """, unsafe_allow_html=True)
-    st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
-    st.subheader("Data View.")
-
-    data = get_cropped_data('all')
-    for path in data:
-        st.write(path)
 
 elif choose == "Add Person":
     st.markdown(""" <style> .font {
@@ -516,7 +464,21 @@ elif choose == "View Person":
     st.markdown('<p class="font">Database Modul YOLO V8 Face and Body Recognition</p>', unsafe_allow_html=True)     
     st.subheader("List of Registered Person.")
     image_files=load_person_images()
-    images = [{"image": item["imgpath"], "name": item["name"]}  for item in image_files]
+    #images = [{"image": item["imgpath"], "name": item["name"]}  for item in image_files]
+    images = []
+    added_names = set()
+    for item in image_files:
+        name = item["name"]
+        imgpath = item["imgpath"]
+        
+        # Check if the name is not in the set of added names
+        if name not in added_names:
+            images.append({"image": imgpath, "name": name})
+            added_names.add(name)
+        else:
+            # Handle the case where an item with the same name already exists
+            # You can skip it or perform some other action as needed.
+            pass
     #for data_path in image_files :
     print(images)
     num_columns = 3
